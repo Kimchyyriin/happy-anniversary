@@ -3,184 +3,243 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>3D Heart Encryption ❤️</title>
+    <title>For Opor Only ❤️</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Kanit:wght@300;400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@200;300;400;500&display=swap" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; -webkit-touch-callout: none; }
         
         body, html {
             width: 100%; height: 100%; overflow: hidden;
-            /* พื้นหลังสีคราม (Indigo) */
             background: radial-gradient(circle at center, #2e1065 0%, #1e1b4b 50%, #020617 100%);
-            font-family: 'Kanit', sans-serif;
-            touch-action: none;
+            font-family: 'Kanit', sans-serif; touch-action: none; color: white;
         }
 
-        #webgl-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; }
+        #webgl-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; opacity: 0; transition: opacity 2s; }
 
-        /* --- Terminal Boot Screen --- */
-        #terminal {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(2, 6, 23, 0.95); z-index: 100;
-            display: flex; flex-direction: column; justify-content: center; padding: 20px;
-            color: #38bdf8; font-family: 'Fira Code', monospace; font-size: 0.9rem;
-            text-shadow: 0 0 5px rgba(56, 189, 248, 0.5);
+        /* --- 1. หน้าจอใส่รหัสผ่าน (Lock Screen) --- */
+        #lock-screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 100;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            background: rgba(2, 6, 23, 0.85); backdrop-filter: blur(10px); transition: opacity 1s;
         }
-        .log-line { margin-bottom: 5px; opacity: 0; animation: fadeIn 0.2s forwards; }
+        .lock-title { font-size: 1.2rem; font-weight: 300; margin-bottom: 10px; color: #f8fafc; }
+        .lock-hint { font-size: 0.9rem; color: #f472b6; margin-bottom: 30px; font-weight: 200; }
+        
+        .pin-display {
+            font-size: 2rem; letter-spacing: 15px; margin-bottom: 40px; height: 40px;
+            color: #38bdf8; border-bottom: 2px solid rgba(255,255,255,0.2); padding-bottom: 10px;
+        }
+        
+        .pin-pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+        .pin-btn {
+            width: 65px; height: 65px; border-radius: 50%;
+            background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.2);
+            display: flex; justify-content: center; align-items: center;
+            font-size: 1.5rem; color: white; cursor: pointer; transition: 0.1s;
+        }
+        .pin-btn:active { background: rgba(244, 114, 182, 0.4); transform: scale(0.9); }
+        .error-shake { animation: shake 0.4s; color: #ef4444; }
 
-        /* --- UI Overlay --- */
-        #ui-layer {
-            position: absolute; bottom: 10%; width: 100%; text-align: center;
-            z-index: 10; pointer-events: none; opacity: 0; transition: opacity 1s;
-        }
-        .instruction {
-            color: #e0e7ff; font-weight: 300; font-size: 1.1rem; letter-spacing: 1px;
-            animation: pulseText 2s infinite; text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            50% { transform: translateX(10px); }
+            75% { transform: translateX(-10px); }
         }
 
-        /* --- Glassmorphism Message --- */
+        /* --- 2. หน้าจอหยอดให้เขิน (Teaser Sequence) --- */
+        #teaser-screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 80;
+            display: none; flex-direction: column; justify-content: center; align-items: center;
+            background: rgba(2, 6, 23, 0.95); text-align: center; padding: 30px;
+        }
+        .teaser-text {
+            font-size: 1.3rem; font-weight: 300; line-height: 1.8; color: #f472b6;
+            opacity: 0; transform: translateY(20px); transition: all 1s ease; margin-bottom: 15px;
+        }
+        .teaser-text.show { opacity: 1; transform: translateY(0); }
+        .touch-to-start {
+            margin-top: 40px; font-size: 1rem; color: #38bdf8; opacity: 0;
+            animation: pulseText 1.5s infinite; cursor: pointer; padding: 20px;
+        }
+
+        /* --- 3. หน้าจอข้อความหลัก --- */
         #message-card {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -40%);
-            width: 85%; max-width: 420px; z-index: 20; opacity: 0; pointer-events: none;
+            width: 85%; max-width: 420px; z-index: 50; opacity: 0; pointer-events: none;
             transition: all 1.5s cubic-bezier(0.16, 1, 0.3, 1);
         }
-        #message-card.show {
-            transform: translate(-50%, -50%); opacity: 1; pointer-events: auto;
-        }
+        #message-card.show { transform: translate(-50%, -50%); opacity: 1; pointer-events: auto; }
+        
         .glass-panel {
             background: rgba(30, 27, 75, 0.4); border-radius: 20px; padding: 35px 25px;
             backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.15); box-shadow: 0 30px 60px rgba(0,0,0,0.6);
-            color: #f8fafc; text-align: center;
+            border: 1px solid rgba(244, 114, 182, 0.3); box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            text-align: center;
         }
         .glass-panel h1 {
-            background: linear-gradient(135deg, #f472b6, #818cf8);
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-            font-size: 1.8rem; margin-bottom: 15px; font-weight: 500;
+            color: #f472b6; font-size: 1.6rem; margin-bottom: 20px; font-weight: 500;
         }
-        .glass-panel p { font-size: 1rem; line-height: 1.7; font-weight: 300; }
-        .hl { color: #f472b6; font-weight: 400; }
-        .hl-blue { color: #38bdf8; font-weight: 400; }
+        .glass-panel p { font-size: 1.05rem; line-height: 1.8; font-weight: 300; }
+        .name-hl { color: #38bdf8; font-weight: 500; }
 
-        @keyframes fadeIn { to { opacity: 1; } }
-        @keyframes pulseText { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
+        @keyframes pulseText { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
     </style>
 </head>
 <body>
 
-    <div id="terminal"></div>
+    <div id="lock-screen">
+        <div class="lock-title">Enter Passcode</div>
+        <div class="lock-hint">Hint: วันครบรอบของเรา (DDMMYYYY)</div>
+        <div class="pin-display" id="pin-display"></div>
+        <div class="pin-pad">
+            <div class="pin-btn" onclick="addPin(1)">1</div>
+            <div class="pin-btn" onclick="addPin(2)">2</div>
+            <div class="pin-btn" onclick="addPin(3)">3</div>
+            <div class="pin-btn" onclick="addPin(4)">4</div>
+            <div class="pin-btn" onclick="addPin(5)">5</div>
+            <div class="pin-btn" onclick="addPin(6)">6</div>
+            <div class="pin-btn" onclick="addPin(7)">7</div>
+            <div class="pin-btn" onclick="addPin(8)">8</div>
+            <div class="pin-btn" onclick="addPin(9)">9</div>
+            <div class="pin-btn" onclick="clearPin()" style="font-size: 1rem; color: #ef4444;">DEL</div>
+            <div class="pin-btn" onclick="addPin(0)">0</div>
+            <div class="pin-btn" onclick="checkPin()" style="background: rgba(56, 189, 248, 0.2); color: #38bdf8;">OK</div>
+        </div>
+    </div>
+
+    <div id="teaser-screen">
+        <div class="teaser-text" id="t1">ปลดล็อกสำเร็จ... 🔓</div>
+        <div class="teaser-text" id="t2">ยืนยันตัวตน: <span style="color:white;">โอปอ</span> 💖</div>
+        <div class="teaser-text" id="t3">เวลาที่เดินทางด้วยกันมา: 2 ปี 1 เดือน</div>
+        <div class="teaser-text" id="t4">รู้ตัวมั้ยว่า... ตกหลุมรักโอปอซ้ำๆ ทุกวันเลย 😳</div>
+        <div class="teaser-text" id="t5">เค้าเตรียมของขวัญไว้ให้...</div>
+        <div class="touch-to-start" id="start-btn" onclick="start3D()">แตะหน้าจอเพื่อรับของขวัญเลย 👉</div>
+    </div>
 
     <div id="webgl-container"></div>
 
-    <div id="ui-layer">
-        <div class="instruction">แตะหน้าจอเพื่อประกอบร่าง 3D ❤️</div>
-    </div>
-
     <div id="message-card">
         <div class="glass-panel">
-            <h1>System Decrypted 🔓</h1>
+            <h1>Happy Anniversary 🎉</h1>
             <p>
-                ปกติชีวิตเค้าก็วนเวียนอยู่กับการเขียนโค้ด ทำโปรเจกต์ <span class="hl-blue">OSI Layer</span> หรือไม่ก็ปั่นงาน <span class="hl">Java</span> กับ <span class="hl">C++</span> จนหัวหมุน...<br><br>
-                แต่ไม่ว่า Data Structure จะซับซ้อนแค่ไหน หรือต้องแก้บัคใน <span class="hl-blue">Linked List</span> อีกกี่รอบ พื้นที่ใน Memory ของเค้าก็มีสเปซว่างให้เธอเสมอเลยนะ<br><br>
-                ขอบคุณที่คอยเป็นกำลังใจให้เด็ก <span class="hl">ITI มจพ ปราจีน</span> คนนี้นะครับ รักเธอที่สุดเลย! 💖
+                สุขสันต์วันครบรอบนะครับ <span class="name-hl">โอปอ</span> ❤️<br><br>
+                ขอบคุณที่เข้ามาเป็นความสบายใจและรอยยิ้มของเค้าในทุกๆ วัน ขอบคุณที่คอยอยู่ข้างๆ ไม่ว่าวันนั้นจะเจอเรื่องเหนื่อยแค่ไหน แค่มีเธอมันก็ดีขึ้นเสมอ<br><br>
+                สัญญาว่าจะดูแลและจับมือกันไปแบบนี้ให้นานที่สุดเลยนะ รักโอปอมากๆ ครับ 💖
             </p>
         </div>
     </div>
 
     <script>
-        // --- 1. Terminal Boot Sequence ---
-        const terminal = document.getElementById('terminal');
-        const logs = [
-            "[SYSTEM] Initializing Mainframe...",
-            "[MODULE] Bypassing OSI Transport Layer...",
-            "[MODULE] Evaluating Java Postfix Expression Tree... OK",
-            "[MODULE] Compiling C++ Linked List Logic... OK",
-            "[MODULE] Checking Java Lottery System... Jackpot Found!",
-            "[NETWORK] Connecting to ITI_KMUTNB_SERVER...",
-            "[DATA] Locating Target Heartbeat... 100%",
-            "[SYSTEM] Launching 3D Render Engine..."
-        ];
-        
-        let logIdx = 0;
-        function showLogs() {
-            if (logIdx < logs.length) {
-                const p = document.createElement('p');
-                p.className = 'log-line';
-                p.innerText = logs[logIdx];
-                terminal.appendChild(p);
-                logIdx++;
-                setTimeout(showLogs, 400 + Math.random() * 300);
-            } else {
-                setTimeout(() => {
-                    terminal.style.transition = "opacity 1s";
-                    terminal.style.opacity = 0;
-                    setTimeout(() => {
-                        terminal.style.display = "none";
-                        document.getElementById('ui-layer').style.opacity = 1;
-                        init3D(); // เริ่มรัน 3D
-                    }, 1000);
-                }, 800);
+        // --- 1. ระบบใส่รหัสผ่าน ---
+        let currentPin = "";
+        const CORRECT_PIN = "14022026"; // รหัสผ่านคือวันครบรอบ
+        const display = document.getElementById('pin-display');
+
+        function addPin(num) {
+            if (currentPin.length < 8) {
+                currentPin += num;
+                updateDisplay();
             }
         }
-        window.onload = () => setTimeout(showLogs, 500);
+        function clearPin() {
+            currentPin = currentPin.slice(0, -1);
+            updateDisplay();
+        }
+        function updateDisplay() {
+            // ทำตัวเลขเป็น Format รหัส 8 หลัก
+            let hidden = currentPin.replace(/./g, '●');
+            display.innerText = hidden;
+            display.classList.remove('error-shake');
+        }
 
-        // --- 2. 3D Particle System (Three.js) ---
+        function checkPin() {
+            if (currentPin === CORRECT_PIN) {
+                // รหัสถูก ซ่อนหน้าล็อก
+                document.getElementById('lock-screen').style.opacity = 0;
+                setTimeout(() => {
+                    document.getElementById('lock-screen').style.display = 'none';
+                    playTeaser();
+                }, 1000);
+            } else {
+                // รหัสผิด เด้งสั่นๆ
+                display.classList.add('error-shake');
+                setTimeout(() => { currentPin = ""; updateDisplay(); }, 400);
+            }
+        }
+
+        // --- 2. ระบบข้อความทำให้เขิน (Teaser Sequence) ---
+        function playTeaser() {
+            const teaser = document.getElementById('teaser-screen');
+            teaser.style.display = 'flex';
+            
+            // ค่อยๆ โชว์ข้อความทีละบรรทัด
+            setTimeout(() => document.getElementById('t1').classList.add('show'), 500);
+            setTimeout(() => document.getElementById('t2').classList.add('show'), 2000);
+            setTimeout(() => document.getElementById('t3').classList.add('show'), 4000);
+            setTimeout(() => document.getElementById('t4').classList.add('show'), 6500);
+            setTimeout(() => document.getElementById('t5').classList.add('show'), 9000);
+            
+            // โชว์ปุ่มให้กดไปต่อ
+            setTimeout(() => {
+                document.getElementById('start-btn').style.opacity = 1;
+            }, 10500);
+        }
+
+        // --- 3. ระบบหัวใจ 3D ---
+        function start3D() {
+            document.getElementById('teaser-screen').style.opacity = 0;
+            setTimeout(() => {
+                document.getElementById('teaser-screen').style.display = 'none';
+                document.getElementById('webgl-container').style.opacity = 1;
+                init3D();
+            }, 1000);
+        }
+
         function init3D() {
             const container = document.getElementById('webgl-container');
             const scene = new THREE.Scene();
-            
-            // ตั้งค่ากล้อง
             const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
             camera.position.z = 45;
 
-            // ตั้งค่า Renderer
             const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
             renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
             container.appendChild(renderer.domElement);
 
-            // สร้างอนุภาค (Particles) 8,000 จุด
             const particleCount = 8000;
             const geometry = new THREE.BufferGeometry();
-            
             const positions = new Float32Array(particleCount * 3);
             const targetPositions = new Float32Array(particleCount * 3);
             const colors = new Float32Array(particleCount * 3);
 
             const colorPink = new THREE.Color('#f472b6');
             const colorCyan = new THREE.Color('#38bdf8');
-            const colorPurple = new THREE.Color('#818cf8');
+            const colorWhite = new THREE.Color('#ffffff');
 
             for (let i = 0; i < particleCount; i++) {
-                // 1. ตำแหน่งเริ่มต้น (ลอยสุ่มในอวกาศ)
-                positions[i * 3] = (Math.random() - 0.5) * 150;
-                positions[i * 3 + 1] = (Math.random() - 0.5) * 150;
-                positions[i * 3 + 2] = (Math.random() - 0.5) * 150;
+                // จุดเริ่มต้นสุ่มรอบๆ นอก
+                positions[i * 3] = (Math.random() - 0.5) * 200;
+                positions[i * 3 + 1] = (Math.random() - 0.5) * 200;
+                positions[i * 3 + 2] = (Math.random() - 0.5) * 200;
 
-                // 2. คำนวณตำแหน่งเป้าหมาย (3D Heart Equation)
+                // พิกัดหัวใจ 3 มิติ
                 const t = Math.random() * Math.PI * 2;
-                const v = Math.random() * Math.PI; // สำหรับความหนา (3D)
-
-                // สมการรูปหัวใจ
                 let x = 16 * Math.pow(Math.sin(t), 3);
                 let y = 13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t);
-                
-                // สร้างมิติความลึก Z ให้ดูเป็นก้อน 3 มิติ
                 let z = (Math.random() - 0.5) * 8 * (1 - Math.abs(x/16)); 
                 
-                // ย่อขนาดลงนิดหน่อย
                 const scale = 1.2;
                 targetPositions[i * 3] = x * scale;
-                targetPositions[i * 3 + 1] = y * scale + 2; // ยกขึ้นมานิดนึง
+                targetPositions[i * 3 + 1] = y * scale + 4; // ยกสูงขึ้นเพื่อให้พ้นข้อความ
                 targetPositions[i * 3 + 2] = z * scale;
 
-                // 3. สุ่มสีให้แต่ละจุด
                 const mixedColor = new THREE.Color();
                 const rand = Math.random();
-                if (rand < 0.5) mixedColor.copy(colorPink);
-                else if (rand < 0.8) mixedColor.copy(colorPurple);
-                else mixedColor.copy(colorCyan);
+                if (rand < 0.6) mixedColor.copy(colorPink);
+                else if (rand < 0.8) mixedColor.copy(colorCyan);
+                else mixedColor.copy(colorWhite);
                 
                 mixedColor.toArray(colors, i * 3);
             }
@@ -188,54 +247,33 @@
             geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
             geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
 
-            // Material สำหรับอนุภาค (ทำให้จุดเรืองแสง)
             const material = new THREE.PointsMaterial({
-                size: 0.35,
-                vertexColors: true,
-                transparent: true,
-                opacity: 0.8,
-                blending: THREE.AdditiveBlending, // เอฟเฟกต์แสงทับซ้อนกัน
-                depthWrite: false
+                size: 0.35, vertexColors: true, transparent: true,
+                opacity: 0.8, blending: THREE.AdditiveBlending, depthWrite: false
             });
 
             const particleSystem = new THREE.Points(geometry, material);
             scene.add(particleSystem);
 
-            // --- การโต้ตอบและการเคลื่อนไหว ---
-            let isMorphing = false;
             let morphProgress = 0;
             let time = 0;
-            
-            // ตัวแปรสำหรับหมุน 3D ด้วยนิ้ว
             let isDragging = false;
             let previousMousePosition = { x: 0, y: 0 };
             let targetRotation = { x: 0, y: 0 };
 
-            // เมื่อแตะหน้าจอ ให้เริ่มประกอบร่างหัวใจ
+            // หมุนหัวใจด้วยนิ้ว
             window.addEventListener('touchstart', (e) => {
-                if (!isMorphing) {
-                    isMorphing = true;
-                    document.getElementById('ui-layer').style.opacity = 0;
-                    setTimeout(() => {
-                        document.getElementById('message-card').classList.add('show');
-                        document.getElementById('ui-layer').innerHTML = "<div class='instruction' style='font-size:0.9rem'>ปัดหน้าจอเพื่อหมุน 360°</div>";
-                        document.getElementById('ui-layer').style.opacity = 0.6;
-                    }, 2500);
-                }
-                
                 isDragging = true;
                 previousMousePosition.x = e.touches[0].clientX;
                 previousMousePosition.y = e.touches[0].clientY;
             }, {passive: false});
 
             window.addEventListener('touchmove', (e) => {
-                if (isDragging && isMorphing) {
+                if (isDragging) {
                     const deltaX = e.touches[0].clientX - previousMousePosition.x;
                     const deltaY = e.touches[0].clientY - previousMousePosition.y;
-                    
                     targetRotation.y += deltaX * 0.01;
                     targetRotation.x += deltaY * 0.01;
-                    
                     previousMousePosition.x = e.touches[0].clientX;
                     previousMousePosition.y = e.touches[0].clientY;
                 }
@@ -243,47 +281,33 @@
 
             window.addEventListener('touchend', () => { isDragging = false; });
 
-            // อนิเมชันลูป (Render Loop)
             function animate() {
                 requestAnimationFrame(animate);
                 time += 0.05;
-
                 const positions = particleSystem.geometry.attributes.position.array;
 
-                if (isMorphing && morphProgress < 1) {
-                    // ค่อยๆ เคลื่อนที่จุดจากตำแหน่งสุ่ม ไปยังตำแหน่งหัวใจ (Lerp)
-                    morphProgress += 0.015;
-                    const easeOutCubic = 1 - Math.pow(1 - morphProgress, 3);
-
+                if (morphProgress < 1) {
+                    morphProgress += 0.01; // ความเร็วในการประกอบร่างหัวใจ
                     for (let i = 0; i < particleCount; i++) {
                         const idx = i * 3;
-                        const startX = positions[idx];
-                        const startY = positions[idx + 1];
-                        const startZ = positions[idx + 2];
-
-                        const targetX = targetPositions[idx];
-                        const targetY = targetPositions[idx + 1];
-                        const targetZ = targetPositions[idx + 2];
-
-                        positions[idx] += (targetX - startX) * 0.05;
-                        positions[idx + 1] += (targetY - startY) * 0.05;
-                        positions[idx + 2] += (targetZ - startZ) * 0.05;
+                        positions[idx] += (targetPositions[idx] - positions[idx]) * 0.05;
+                        positions[idx+1] += (targetPositions[idx+1] - positions[idx+1]) * 0.05;
+                        positions[idx+2] += (targetPositions[idx+2] - positions[idx+2]) * 0.05;
                     }
                     particleSystem.geometry.attributes.position.needsUpdate = true;
-                }
-
-                if (morphProgress >= 1) {
-                    // เอฟเฟกต์หัวใจเต้น (Heartbeat Pulse)
+                } else {
+                    // เอฟเฟกต์หัวใจเต้น
                     const beat = 1 + Math.sin(time * 2) * 0.05;
                     particleSystem.scale.set(beat, beat, beat);
-
-                    // อัปเดตการหมุน 3D แบบนุ่มนวล (Lerp Rotation)
+                    
+                    // หมุนตามการปัดนิ้ว
                     particleSystem.rotation.y += (targetRotation.y - particleSystem.rotation.y) * 0.1;
                     particleSystem.rotation.x += (targetRotation.x - particleSystem.rotation.x) * 0.1;
-                } else {
-                    // หมุนแบบอิสระตอนยังไม่ประกอบร่าง
-                    particleSystem.rotation.y = time * 0.1;
-                    particleSystem.rotation.z = time * 0.05;
+                    
+                    // เพิ่มการหมุนอัตโนมัติช้าๆ
+                    if(!isDragging) {
+                        targetRotation.y += 0.005;
+                    }
                 }
 
                 renderer.render(scene, camera);
@@ -291,7 +315,11 @@
 
             animate();
 
-            // จัดการตอนหมุนจอ iPad หรือมือถือ
+            // โชว์กล่องข้อความอวยพรเมื่อหัวใจประกอบร่างเสร็จ
+            setTimeout(() => {
+                document.getElementById('message-card').classList.add('show');
+            }, 3000);
+
             window.addEventListener('resize', () => {
                 camera.aspect = window.innerWidth / window.innerHeight;
                 camera.updateProjectionMatrix();
