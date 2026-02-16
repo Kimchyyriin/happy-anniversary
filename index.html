@@ -81,10 +81,31 @@
         .glass-panel h1 {
             color: #f472b6; font-size: 1.6rem; margin-bottom: 20px; font-weight: 500;
         }
-        .glass-panel p { font-size: 1.05rem; line-height: 1.8; font-weight: 300; }
+        .glass-panel p { font-size: 1.05rem; line-height: 1.8; font-weight: 300; margin-bottom: 15px;}
         .name-hl { color: #38bdf8; font-weight: 500; }
 
+        /* --- 4. ปุ่มกดรับของขวัญ (Gift Button) --- */
+        .gift-btn {
+            display: inline-block;
+            margin-top: 15px;
+            padding: 12px 30px;
+            background: linear-gradient(135deg, #f472b6, #fb7185);
+            color: white;
+            text-decoration: none;
+            font-size: 1.1rem;
+            font-weight: 500;
+            border-radius: 50px;
+            box-shadow: 0 4px 15px rgba(244, 114, 182, 0.5);
+            transition: all 0.3s ease;
+            animation: bounceGift 2s infinite;
+        }
+        .gift-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(244, 114, 182, 0.7);
+        }
+
         @keyframes pulseText { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
+        @keyframes bounceGift { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
     </style>
 </head>
 <body>
@@ -114,8 +135,8 @@
         <div class="teaser-text" id="t2">ยืนยันตัวตน: <span style="color:white;">โอปอ</span> 💖</div>
         <div class="teaser-text" id="t3">เวลาที่เดินทางด้วยกันมา: 2 ปี 1 เดือน</div>
         <div class="teaser-text" id="t4">รู้ตัวมั้ยว่า... ตกหลุมรักโอปอซ้ำๆ ทุกวันเลย 😳</div>
-        <div class="teaser-text" id="t5">เค้าเตรียมของขวัญไว้ให้...</div>
-        <div class="touch-to-start" id="start-btn" onclick="start3D()">แตะหน้าจอเพื่อรับของขวัญเลย 👉</div>
+        <div class="teaser-text" id="t5">เค้ามีของขวัญเล็กๆ น้อยๆ มาให้ด้วยนะ...</div>
+        <div class="touch-to-start" id="start-btn" onclick="start3D()">แตะหน้าจอเพื่อเปิดดูเลย 👉</div>
     </div>
 
     <div id="webgl-container"></div>
@@ -128,6 +149,7 @@
                 ขอบคุณที่เข้ามาเป็นความสบายใจและรอยยิ้มของเค้าในทุกๆ วัน ขอบคุณที่คอยอยู่ข้างๆ ไม่ว่าวันนั้นจะเจอเรื่องเหนื่อยแค่ไหน แค่มีเธอมันก็ดีขึ้นเสมอ<br><br>
                 สัญญาว่าจะดูแลและจับมือกันไปแบบนี้ให้นานที่สุดเลยนะ รักโอปอมากๆ ครับ 💖
             </p>
+            <a href="https://gift.truemoney.com/campaign?v=019c668823dc7680a02f6603914ff08b87k" class="gift-btn" target="_blank">🎁 รับของขวัญจากเค้านะ</a>
         </div>
     </div>
 
@@ -148,7 +170,6 @@
             updateDisplay();
         }
         function updateDisplay() {
-            // ทำตัวเลขเป็น Format รหัส 8 หลัก
             let hidden = currentPin.replace(/./g, '●');
             display.innerText = hidden;
             display.classList.remove('error-shake');
@@ -156,32 +177,28 @@
 
         function checkPin() {
             if (currentPin === CORRECT_PIN) {
-                // รหัสถูก ซ่อนหน้าล็อก
                 document.getElementById('lock-screen').style.opacity = 0;
                 setTimeout(() => {
                     document.getElementById('lock-screen').style.display = 'none';
                     playTeaser();
                 }, 1000);
             } else {
-                // รหัสผิด เด้งสั่นๆ
                 display.classList.add('error-shake');
                 setTimeout(() => { currentPin = ""; updateDisplay(); }, 400);
             }
         }
 
-        // --- 2. ระบบข้อความทำให้เขิน (Teaser Sequence) ---
+        // --- 2. ระบบข้อความทำให้เขิน ---
         function playTeaser() {
             const teaser = document.getElementById('teaser-screen');
             teaser.style.display = 'flex';
             
-            // ค่อยๆ โชว์ข้อความทีละบรรทัด
             setTimeout(() => document.getElementById('t1').classList.add('show'), 500);
             setTimeout(() => document.getElementById('t2').classList.add('show'), 2000);
             setTimeout(() => document.getElementById('t3').classList.add('show'), 4000);
             setTimeout(() => document.getElementById('t4').classList.add('show'), 6500);
             setTimeout(() => document.getElementById('t5').classList.add('show'), 9000);
             
-            // โชว์ปุ่มให้กดไปต่อ
             setTimeout(() => {
                 document.getElementById('start-btn').style.opacity = 1;
             }, 10500);
@@ -219,12 +236,10 @@
             const colorWhite = new THREE.Color('#ffffff');
 
             for (let i = 0; i < particleCount; i++) {
-                // จุดเริ่มต้นสุ่มรอบๆ นอก
                 positions[i * 3] = (Math.random() - 0.5) * 200;
                 positions[i * 3 + 1] = (Math.random() - 0.5) * 200;
                 positions[i * 3 + 2] = (Math.random() - 0.5) * 200;
 
-                // พิกัดหัวใจ 3 มิติ
                 const t = Math.random() * Math.PI * 2;
                 let x = 16 * Math.pow(Math.sin(t), 3);
                 let y = 13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t);
@@ -232,7 +247,7 @@
                 
                 const scale = 1.2;
                 targetPositions[i * 3] = x * scale;
-                targetPositions[i * 3 + 1] = y * scale + 4; // ยกสูงขึ้นเพื่อให้พ้นข้อความ
+                targetPositions[i * 3 + 1] = y * scale + 6; // ดันหัวใจขึ้นไปอีกนิด เพื่อเว้นที่ให้ปุ่มของขวัญ
                 targetPositions[i * 3 + 2] = z * scale;
 
                 const mixedColor = new THREE.Color();
@@ -261,8 +276,10 @@
             let previousMousePosition = { x: 0, y: 0 };
             let targetRotation = { x: 0, y: 0 };
 
-            // หมุนหัวใจด้วยนิ้ว
             window.addEventListener('touchstart', (e) => {
+                // ป้องกันไม่ให้การลากหน้าจอไปทับกับการกดลิงก์ของขวัญ
+                if(e.target.tagName.toLowerCase() === 'a') return; 
+                
                 isDragging = true;
                 previousMousePosition.x = e.touches[0].clientX;
                 previousMousePosition.y = e.touches[0].clientY;
@@ -287,7 +304,7 @@
                 const positions = particleSystem.geometry.attributes.position.array;
 
                 if (morphProgress < 1) {
-                    morphProgress += 0.01; // ความเร็วในการประกอบร่างหัวใจ
+                    morphProgress += 0.01; 
                     for (let i = 0; i < particleCount; i++) {
                         const idx = i * 3;
                         positions[idx] += (targetPositions[idx] - positions[idx]) * 0.05;
@@ -296,15 +313,12 @@
                     }
                     particleSystem.geometry.attributes.position.needsUpdate = true;
                 } else {
-                    // เอฟเฟกต์หัวใจเต้น
                     const beat = 1 + Math.sin(time * 2) * 0.05;
                     particleSystem.scale.set(beat, beat, beat);
                     
-                    // หมุนตามการปัดนิ้ว
                     particleSystem.rotation.y += (targetRotation.y - particleSystem.rotation.y) * 0.1;
                     particleSystem.rotation.x += (targetRotation.x - particleSystem.rotation.x) * 0.1;
                     
-                    // เพิ่มการหมุนอัตโนมัติช้าๆ
                     if(!isDragging) {
                         targetRotation.y += 0.005;
                     }
@@ -315,7 +329,6 @@
 
             animate();
 
-            // โชว์กล่องข้อความอวยพรเมื่อหัวใจประกอบร่างเสร็จ
             setTimeout(() => {
                 document.getElementById('message-card').classList.add('show');
             }, 3000);
